@@ -14,14 +14,12 @@
 
 <div id="container">
     <h3>Update student</h3>
-    <form action="StudentControllerServlet" method="GET">
+    <form action="StudentControllerServlet" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="command" value="UPDATE">
-
         <input type="hidden" name="studentId" value="${THE_STUDENT.id}">
 
         <table>
             <tbody>
-            <tr>
             <tr>
                 <td><label>First Name:</label></td>
                 <td><input type="text" name="firstName" value="${THE_STUDENT.firstName}"></td>
@@ -36,12 +34,11 @@
             </tr>
             <tr>
                 <td><label>Images:</label></td>
-                <td><input type="file" name="img" value="${THE_STUDENT.img}"></td>
+                <td><input type="file" name="img"></td>
             </tr>
             <tr>
                 <td><label></label></td>
                 <td><input type="submit" value="Save" class="save"></td>
-            </tr>
             </tr>
             </tbody>
         </table>

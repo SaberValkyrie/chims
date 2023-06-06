@@ -13,7 +13,7 @@
 </div>
 <div id="container">
 	<h3>Add Student</h3>
-	<form action="StudentControllerServlet" method="GET">
+	<form action="StudentControllerServlet" method="POST" enctype="multipart/form-data">
 		<input type="hidden" value="ADD" name="command">
 		<table>
 			<tbody>

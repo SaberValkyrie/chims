@@ -38,7 +38,7 @@
                     <td>${tempStudent.firstName}</td>
                     <td>${tempStudent.lastName}</td>
                     <td>${tempStudent.email}</td>
-                    <td><img src="img/${tempStudent.img}" alt="Student Image">
+                    <td><img src="${tempStudent.img}" alt="Student Image">
                     </td>
                     <td>
                         <a href="${tempLink}" class="update-link">Update</a>

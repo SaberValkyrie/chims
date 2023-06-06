@@ -3,6 +3,7 @@ package SQL;
 import SQL.Student;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,38 +12,41 @@ import jakarta.servlet.http.Part;
 import org.apache.commons.io.IOUtils;
 
 import javax.annotation.Resource;
-
 import javax.sql.DataSource;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
 @WebServlet("/StudentControllerServlet")
+@MultipartConfig
 public class StudentControllerServlet extends HttpServlet {
     private static final long serialVersionUID =  1L;
 
     private StudentDbUtil studentDbUtil;
+
     @Resource(name="jdbc/jspdemosql")
     private DataSource dataSource;
 
     @Override
-    public void init() throws ServletException{
+    public void init() throws ServletException {
         super.init();
 
         try {
             studentDbUtil = new StudentDbUtil(dataSource);
-        }catch (Exception exc){
+        } catch (Exception exc) {
             throw new ServletException(exc);
         }
     }
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException{
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         try {
             String theCommand = request.getParameter("command");
-            if (theCommand == null){
+            if (theCommand == null) {
                 theCommand = "list";
             }
-            switch (theCommand){
+            switch (theCommand) {
                 case "ADD":
                     addStudent(request, response);
                     break;
@@ -58,10 +62,13 @@ public class StudentControllerServlet extends HttpServlet {
                 default:
                     listStudents(request, response);
             }
-        }
-        catch (Exception exc){
+        } catch (Exception exc) {
             throw new ServletException(exc);
         }
+    }
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        doGet(request, response);
     }
 
     private void listStudents(HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -81,18 +88,49 @@ public class StudentControllerServlet extends HttpServlet {
         listStudents(request, response);
     }
 
+    private String uploadFile(Part part, String fileName, String uploadDirectory) throws IOException {
+        String filePath = uploadDirectory + File.separator + fileName;
+
+        try (InputStream is = part.getInputStream(); FileOutputStream out = new FileOutputStream(filePath)) {
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = is.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+            }
+        }
+
+        return filePath;
+    }
+
+    private String getFileName(Part part) {
+        String contentDisposition = part.getHeader("content-disposition");
+        String[] elements = contentDisposition.split(";");
+        for (String element : elements) {
+            if (element.trim().startsWith("filename")) {
+                return element.substring(element.indexOf("=") + 1).trim().replace("\"", "");
+            }
+        }
+        return "";
+    }
+
     public void updateStudent(HttpServletRequest request, HttpServletResponse response) throws Exception {
         int id = Integer.parseInt(request.getParameter("studentId"));
         String firstName = request.getParameter("firstName");
         String lastName = request.getParameter("lastName");
         String email = request.getParameter("email");
-        String img = request.getParameter("img");
 
+        Part filePart = request.getPart("img");
+        String fileName = getFileName(filePart);
+        String uploadDirectory = getServletContext().getRealPath("/img");
+        String imagePath = uploadFile(filePart, fileName, uploadDirectory);
+        String img = "img/" + fileName;
 
-        Student theStudent = new Student(id, firstName, lastName, email,img);
+        Student theStudent = new Student(id, firstName, lastName, email, img);
 
         studentDbUtil.updateStudent(theStudent);
-        listStudents(request, response);
+
+        // Redirect to the updated student's details page
+        response.sendRedirect(request.getContextPath() + "/StudentControllerServlet");
     }
 
     public void loadStudent(HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -107,25 +145,20 @@ public class StudentControllerServlet extends HttpServlet {
     }
 
     private void addStudent(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        // Lấy thông tin học sinh từ request
         String firstName = request.getParameter("firstName");
         String lastName = request.getParameter("lastName");
         String email = request.getParameter("email");
-        String img = request.getParameter("img");
-        // Đọc dữ liệu hình ảnh từ request
-//        Part imagePart = request.getPart("image");
-//        InputStream imageInputStream = imagePart.getInputStream();
-//        byte[] imageData = IOUtils.toByteArray(imageInputStream);
 
-        // Tạo đối tượng Student với thông tin và dữ liệu hình ảnh vừa lấy
-        Student student = new Student(firstName, lastName, email,img);
-//        student.setImage(imageData);
+        Part filePart = request.getPart("img");
+        String fileName = getFileName(filePart);
+        String uploadDirectory = getServletContext().getRealPath("/img");
+        String imagePath = uploadFile(filePart, fileName, uploadDirectory);
+        String img = "img/" + fileName;
 
-        // Gọi phương thức addStudent trong StudentDbUtil để thêm học sinh vào cơ sở dữ liệu
+        Student student = new Student(firstName, lastName, email, img);
+
         studentDbUtil.addStudent(student);
 
-        // Chuyển hướng về trang danh sách học sinh sau khi thêm thành công
         response.sendRedirect(request.getContextPath() + "/StudentControllerServlet");
     }
-
 }
